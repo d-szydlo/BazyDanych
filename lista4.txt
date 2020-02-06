@@ -1,0 +1,56 @@
+1.  use MDBHobby
+
+    db.sport.insertOne({ nazwa: "koszykowka", miejsce: ["hala","na zewnatrz"], typ: ["indywidualny", "druzynowy"], sprzet: "pilka"})
+
+    db.zwierzeta.insertOne({gatunek: "pies", rasa: "corgi", waga_min: 10, waga_max: 14, ubarwienie: ["bialy", "brazowy", "czarny"], dlugosc_zycia: 12 })
+
+    db.osoby.insertOne({imie: "Jan", nazwisko: "Nowak", wiek: 34, wzrost: 179, zainteresowania: ["koszykowka", "hokej"], obywatelstwo: [ {kraj: "Polska", jednostka_autonomiczna: "-"}], zwierzeta: [{imie: "PC", gatunek: "kot"}] })
+
+2. db.sport.insertMany([
+{ nazwa: "siatkowka", miejsce: ["hala","na zewnatrz"], typ: ["druzynowy"], sprzet: "pilka"},
+{ nazwa: "hokej", miejsce: ["hala","lodowisko"], typ: ["druzynowy"], sprzet: "kij"},
+{ nazwa: "tenis", miejsce: ["hala","na zewnatrz"], typ: ["indywidualny"], sprzet: "rakieta"},
+{ nazwa: "tenis stolowy", miejsce: ["hala"], typ: ["indywidualny"], sprzet: "paletka"},
+{ nazwa: "bilard", miejsce: ["hala"], typ: ["indywidualny"], sprzet: "stol"},
+{ nazwa: "plywanie", miejsce: ["basen"], typ: ["druzynowy", "indywidualny"], sprzet: "stroj kapielowy"},
+{ nazwa: "nurkowanie", miejsce: ["basen"], typ: ["indywidualny"], sprzet: "butla tlenowa"},
+{ nazwa: "skok o tyczce", miejsce: ["hala","na zewnatrz"], typ: ["indywidualny"], sprzet: "tyczka"},
+{ nazwa: "rzut mlotem", miejsce: ["hala","na zewnatrz"], typ: ["indywidualny"], sprzet: "mlot"},
+{ nazwa: "boks", miejsce: ["hala"], typ: ["indywidualny"], sprzet: "rekawice"}
+])
+
+3.  db.zwierzeta.insertMany([
+{gatunek: "pies", rasa: "golden retriever", waga_min: 25, waga_max: 34, ubarwienie: ["bialy", "zloty"], dlugosc_zycia: 10 },
+{gatunek: "pies", rasa: "husky", waga_min: 16, waga_max: 27, ubarwienie: ["bialy", "czarny"], dlugosc_zycia: 12 },
+{gatunek: "kot", rasa: "maine coon", waga_min: 4, waga_max: 8, ubarwienie: ["szary", "brazowy", "czarny"], dlugosc_zycia: 13 },
+{gatunek: "kot", rasa: "sfinks", waga_min: 3, waga_max: 7, ubarwienie: ["szary", "rozowy"], dlugosc_zycia: 12 },
+{gatunek: "chomik", rasa: "syryjski", waga_min: 0.12, waga_max: 0.14, ubarwienie: ["bialy", "brazowy", "czarny"], dlugosc_zycia: 2 },
+{gatunek: "chomik", rasa: "dzungarski", waga_min: 0.12, waga_max: 0.14, ubarwienie: ["szary", "czarny"], dlugosc_zycia: 2 },
+{gatunek: "pies", rasa: "samoyed", waga_min: 16, waga_max: 30, ubarwienie: ["bialy"], dlugosc_zycia: 13 },
+{gatunek: "pies", rasa: "jamnik", waga_min: 7, waga_max: 15, ubarwienie: ["rudy", "brazowy", "czarny"], dlugosc_zycia: 16 },
+{gatunek: "pies", rasa: "labrador", waga_min: 25, waga_max: 36, ubarwienie: ["bialy", "brazowy", "czarny"], dlugosc_zycia: 10 },
+{gatunek: "krolik", rasa: "kalifornijski", waga_min: 3, waga_max: 5, ubarwienie: ["bialy", "czarny"], dlugosc_zycia: 6 }
+])
+
+4.  generator.c + dane.txt
+
+5.  show collections
+    db.getCollectionNames().forEach(function (tabela) {
+        if (db[tabela].count() > 0 ) print(tabela);
+    });
+
+6.  db.osoby.find({'zwierzeta.gatunek':"kot"},{_id:0, imie:1, nazwisko:1, 'zwierzeta.imie':1}).pretty()
+
+7.  db.osoby.find( { $or: [ {imie:"Jan",'obywatelstwo.kraj':"Polska"},{'obywatelstwo.1': {$exists: true}} ] },{_id:0, imie:1, nazwisko:1} ).pretty()
+
+10.  db.osoby.deleteMany({$and:[{zainteresowania:"hokej"},{zainteresowania:"koszykowka"}]})
+
+13. db.osoby.find({'zwierzeta.gatunek':"pies"},{_id:0, imie:1, nazwisko:1, obywatelstwo:1}).sort({wiek: 1}).pretty()
+
+db.osoby.find({zainteresowania:"pies"},{_id:0, imie:1, nazwisko:1, obywatelstwo:1}).sort({wiek: 1}).pretty()
+
+
+
+
+
+    

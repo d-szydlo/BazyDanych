@@ -1,0 +1,245 @@
+1. 	CREATE DATABASE Hobby;
+	CREATE USER Dominika09 IDENTIFIED BY '901052';
+	GRANT USAGE ON *.* TO Dominika09@localhost IDENTIFIED BY '901052';
+	GRANT SELECT, INSERT, UPDATE ON Hobby.* TO Dominika09@'localhost';
+	FLUSH PRIVILEGES;
+
+2.	CREATE TABLE osoba (
+	id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	imie varchar(20) NOT NULL,
+	dataUrodzenia date NOT NULL CHECK (dataUrodzenia < '2001-11-23'),
+	plec char(1) NOT NULL);
+
+	CREATE TABLE sport(
+	id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	nazwa varchar(20) NOT NULL,
+	typ ENUM ('indywidualny', 'druzynowy', 'mieszany') NOT NULL DEFAULT 'druzynowy',
+	lokacja varchar(20));
+	
+	CREATE TABLE nauka(
+	id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	nazwa varchar(20) NOT NULL,
+	lokacja varchar(20));
+
+	CREATE TABLE inne(
+	id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	nazwa varchar(20) NOT NULL,
+	lokacja varchar(20),
+	towarzysze bool NOT NULL DEFAULT true);
+
+	CREATE TABLE hobby(
+	osoba int NOT NULL,
+	id int NOT NULL,
+	typ ENUM('sport','nauka','inne') NOT NULL,
+	PRIMARY KEY(osoba, id, typ));
+
+3.	CREATE TABLE zwierzak(
+	name varchar(20),
+	owner varchar(20),
+	species varchar(20),
+	sex char(1),
+	birth date);
+
+	INSERT INTO zwierzak(name, owner, species, sex, birth) SELECT name, owner, species, sex FROM pet;
+
+	INSERT INTO osoba(imie, dataUrodzenia, plec) SELECT owner, DATE(DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*(36500 - 6570 +1)+6750) DAY)), ELT(FLOOR(RAND()*(2-1+1)+1),"m", "f") FROM zwierzak GROUP BY owner;
+
+4.	ALTER TABLE osoba ADD COLUMN nazwisko varchar(50) AFTER imie;
+	ALTER TABLE zwierzak ADD COLUMN ownerId int;
+	UPDATE zwierzak INNER JOIN osoba ON osoba.imie = zwierzak.owner SET zwierzak.ownerId = osoba.id;
+    ALTER TABLE zwierzak DROP COLUMN owner;
+
+5.	ALTER TABLE zwierzak ADD CONSTRAINT fk_idOsoby FOREIGN KEY(ownerId) REFERENCES osoba(id); 
+    ALTER TABLE hobby ADD CONSTRAINT fk_osoba FOREIGN KEY (osoba) REFERENCES osoba(id);
+
+6.  ALTER TABLE inne AUTO_INCREMENT = 7000;
+
+7.  DELIMITER $$
+    CREATE PROCEDURE uzupelnianie(IN name VARCHAR(20), IN num INT)
+    BEGIN
+    DECLARE i INT;
+    DECLARE j INT;
+    SET i = 0;
+    CASE
+        WHEN name = 'osoba' THEN
+            WHILE i<num DO
+                INSERT INTO osoba(imie, nazwisko, dataUrodzenia, plec) VALUES(
+                    ELT(FLOOR(RAND()*(20)+1),'Adam','Karol','Jakub','Michal','Jan','Bartek','Radek','Pawel','Oliwier','Janusz','Ania','Karolina','Asia','Basia','Kasia','Ola','Gosia','Agnieszka','Laura','Justyna'),
+                    ELT(FLOOR(RAND()*(15)+1), 'Nowak','Gruszka','Kowal','Krol','Jablko','Ananas','Masztalerz','Owoc','Zmywak','Kreda','Tablica','Krata','Wcislo','Wypchlo','Wiechta'),
+                    DATE(DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*(36500 - 6570 +1)+6750) DAY)),
+                    ELT(FLOOR(RAND()*(2)+1),'m','f'));
+                SET i = i+1;
+            END WHILE;
+        WHEN name = 'sport' THEN
+            WHILE i<num DO
+                INSERT INTO sport(nazwa, typ, lokacja) VALUES(
+                    ELT(FLOOR(RAND()*(10)+1),'siatkowka','koszykowka','hokej','unihokej','tenis','tenis stolowy','sztafeta','skok wzwyz','rzut mlotem','plywanie'),
+                    ELT(FLOOR(RAND()*(3)+1),'indywidualny','druzynowy','mieszany'),
+                    ELT(FLOOR(RAND()*(5)+1),'basen','boisko','kort','bieznia','lodowisko'));
+                SET i = i+1;
+                END WHILE;
+        WHEN name = 'nauka' THEN
+            WHILE i<num DO
+                INSERT INTO nauka(nazwa, lokacja) VALUES(
+                    ELT(FLOOR(RAND()*(5)+1),'matematyka','informatyka','fizyka','chemia','socjologia'),
+                    ELT(FLOOR(RAND()*(3)+1),'dom','biblioteka','szkola'));
+                SET i = i+1;
+                END WHILE;
+        WHEN name = 'inne' THEN
+            WHILE i<num DO
+                INSERT INTO inne(nazwa, lokacja, towarzysze) VALUES(
+                    ELT(FLOOR(RAND()*(5)+1),'czytanie','programowanie','gra na instrumencie','wedkarstwo','granie na komputerze'),
+                    ELT(FLOOR(RAND()*(5)+1),'dom','szkola','staw','czytelnia','biblioteka'),
+                    FLOOR(RAND()*(2)+1));
+                SET i = i+1;
+            END WHILE;
+        WHEN name = 'hobby' THEN
+            WHILE i<num DO
+		    IF FLOOR(RAND()*2+1) = 1 THEN 
+		    	SET j = FLOOR(RAND()*300+1);
+		    ELSE
+			SET j = FLOOR(RAND()*(551)+7000);
+		    END IF;
+                INSERT INTO hobby(osoba,id,typ) VALUES(
+                    FLOOR(RAND()*(1000)+1), j , IF(j<300, ELT(FLOOR(RAND()*2+1),'nauka','sport'),'inne'));
+                SET i = i+1;
+            END WHILE;
+        END CASE;
+    END; $$
+DELIMITER ;
+
+    CALL uzupelnianie('osoba',1000);
+    CALL uzupelnianie('sport',300);
+    CALL uzupelnianie('nauka',300);
+    CALL uzupelnianie('inne','550');
+    CALL uzupelnianie('hobby', 1300);
+
+  
+8.	CREATE VIEW view1 AS
+		(SELECT inne.nazwa AS nazwa, hobby.osoba AS osoba, hobby.typ AS typ FROM hobby INNER JOIN inne ON hobby.id=inne.id WHERE hobby.typ = 'inne')
+		UNION
+		(SELECT sport.nazwa AS nazwa, hobby.osoba, hobby.typ FROM hobby INNER JOIN sport ON hobby.id=sport.id WHERE hobby.typ = 'sport')
+		UNION
+		(SELECT nauka.nazwa AS nazwa, hobby.osoba, hobby.typ FROM hobby INNER JOIN nauka ON hobby.id=nauka.id WHERE hobby.typ = 'nauka');
+	
+PREPARE statement1 FROM 'SELECT nazwa FROM view1 WHERE typ=? AND osoba=?;';
+
+9.	DELIMITER $$
+	CREATE PROCEDURE zad9(IN id INT)
+	BEGIN
+	SELECT nazwa FROM view1 WHERE osoba = id;
+	END;$$
+	DELIMETER ;
+
+10.	DELIMITER $$
+	CREATE PROCEDURE zad10(IN id INT)
+	BEGIN
+	(SELECT nazwa FROM view1 WHERE osoba = id)
+	UNION
+	(SELECT species AS nazwa FROM zwierzak WHERE ownerId= id);
+	END;$$
+	DELIMITER ;
+
+11. DELIMITER $$
+    CREATE TRIGGER zad11
+    AFTER INSERT ON hobby FOR EACH ROW
+    BEGIN
+        CASE
+            WHEN NEW.typ = 'sport' THEN
+                INSERT INTO sport(id, nazwa, typ, lokacja) VALUES(
+                    NEW.id,
+                    ELT(FLOOR(RAND()*(10)+1),'siatkowka','koszykowka','hokej','unihokej','tenis','tenis   stolowy','sztafeta','skok wzwyz','rzut mlotem','plywanie'),
+                    ELT(FLOOR(RAND()*(3)+1),'indywidualny','druzynowy','mieszany'),
+                    ELT(FLOOR(RAND()*(5)+1),'basen','boisko','kort','bieznia','lodowisko'));
+            WHEN NEW.typ = 'nauka' THEN
+                INSERT INTO nauka(id, nazwa, lokacja) VALUES(
+                NEW.id,
+                ELT(FLOOR(RAND()*(5)+1),'matematyka','informatyka','fizyka','chemia','socjologia'),
+                ELT(FLOOR(RAND()*(3)+1),'dom','biblioteka','szkola'));
+            WHEN NEW.typ = 'inne' THEN
+                INSERT INTO inne(id, nazwa, lokacja, towarzysze) VALUES (
+                NEW.id,
+                ELT(FLOOR(RAND()*(5)+1),'czytanie','programowanie','gra na instrumencie','wedkarstwo','granie na komputerze'),
+                ELT(FLOOR(RAND()*(5)+1),'dom','szkola','staw','czytelnia','biblioteka'),
+                FLOOR(RAND()*(2)+1));
+        END CASE;
+    END;
+    $$
+    DELIMITER ;
+
+12. CREATE TRIGGER zad12 AFTER DELETE ON sport FOR EACH ROW
+    BEGIN
+    DELETE FROM hobby WHERE id = OLD.id;
+    END;
+    $$
+
+13. CREATE TRIGGER zad13_1 AFTER DELETE ON nauka FOR EACH ROW
+    BEGIN
+    DELETE FROM hobby WHERE id = OLD.id;
+    END;
+    $$
+
+    CREATE TRIGGER zad13_2 AFTER UPDATE ON nauka FOR EACH ROW
+    BEGIN
+    IF OLD.nazwa <> NEW.nazwa THEN
+        DELETE FROM hobby WHERE id = NEW.id;
+    END IF;
+    END;
+    $$
+
+14. CREATE TRIGGER zad14 AFTER DELETE ON osoba FOR EACH ROW
+    BEGIN
+        DELETE FROM hobby WHERE osoba = OLD.id;
+        UPDATE zwierzak SET ownerId = FLOOR(RAND()*500+1) WHERE ownerId = OLD.id;
+    END;
+    $$
+
+15. Mogą, bo nie naruszają swojego działania.
+
+16. CREATE VIEW zad16 AS
+    (SELECT inne.nazwa AS nazwa, COUNT(hobby.osoba) AS liczba_osob, hobby.typ AS typ
+        FROM hobby INNER JOIN inne ON hobby.id=inne.id
+        WHERE hobby.typ = 'inne'
+        GROUP BY inne.id)
+	UNION
+	(SELECT sport.nazwa AS nazwa, COUNT(hobby.osoba) AS liczba_osob, hobby.typ
+            FROM hobby INNER JOIN sport ON hobby.id=sport.id
+            WHERE hobby.typ = 'sport'
+            GROUP BY sport.id)
+	UNION
+		(SELECT nauka.nazwa AS nazwa, COUNT(hobby.osoba) AS liczba_osob, hobby.typ
+            FROM hobby INNER JOIN nauka ON hobby.id=nauka.id
+            WHERE hobby.typ = 'nauka'
+            GROUP BY nauka.id);
+ SELECT * FROM zad16;
+
+17. CREATE VIEW zad17 AS
+    (SELECT osoba.id, osoba.imie, osoba.nazwisko, zwierzak.name AS nazwa
+    FROM osoba INNER JOIN zwierzak ON zwierzak.ownerId = osoba.id
+    ORDER BY osoba.id)
+    UNION 
+    (SELECT osoba.id, osoba.imie, osoba.nazwisko, sport.nazwa
+    FROM (osoba INNER JOIN hobby ON hobby.osoba = osoba.id) INNER JOIN sport ON sport.id = hobby.id
+    ORDER BY osoba.id)
+    UNION
+    (SELECT osoba.id, osoba.imie, osoba.nazwisko, inne.nazwa
+    FROM (osoba INNER JOIN hobby ON hobby.osoba = osoba.id) INNER JOIN inne ON inne.id = hobby.id
+    ORDER BY osoba.id)
+    UNION
+    (SELECT osoba.id, osoba.imie, osoba.nazwisko, nauka.nazwa
+    FROM (osoba INNER JOIN hobby ON hobby.osoba = osoba.id) INNER JOIN nauka ON nauka.id = hobby.id
+    ORDER BY osoba.id);
+
+18. CREATE PROCEDURE zad18()
+    BEGIN
+        SELECT osoba.imie, YEAR(NOW())-YEAR(osoba.dataUrodzenia) AS wiek 
+        FROM osoba INNER JOIN hobby ON osoba.id=hobby.osoba
+        GROUP BY hobby.osoba
+        ORDER BY COUNT(hobby.id) DESC LIMIT 1;
+    END; 
+    
+19. Żadne, bo wszędzie używane jest CREATE lub ALTER, do których użytkownik nie ma uprawnień.         
+
+
+
+

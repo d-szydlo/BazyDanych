@@ -1,0 +1,234 @@
+1.  CREATE INDEX index_imie ON osoba(imie);
+    CREATE INDEX index_data ON osoba(dataUrodzenia);
+    CREATE INDEX index_id_nazwa ON sport(id, nazwa);
+    CREATE INDEX index_nazwa_id ON inne(nazwa, id);
+    CREATE INDEX index_osoba_id_typ ON hobby(osoba, id, typ);
+
+    Istniały te, które są utworzone na podstawie kluczy podstawowych.
+
+2.  SELECT plec FROM osoba WHERE imie LIKE 'A%'; wykorzystany index_imie
+
+    SELECT nazwa FROM sport WHERE typ = 'druzynowy' ORDER BY nazwa; bez indeksu
+
+    SELECT T1.id, T2.id
+    FROM sport AS T1 CROSS JOIN sport AS T2
+    WHERE T1.lokacja = T2.lokacja AND T1.id>T2.id;
+    wykorzystany indeks PRIMARY i index_id_nazwa
+
+    SELECT imie, nazwisko FROM osoba WHERE dataUrodzenia < '2000-01-01';
+    wykorzystany indeks index_dataUrodzenia
+
+    SELECT liczba_osob FROM zad16 ORDER BY liczba_osob DESC LIMIT 1;
+    wykorzystany indeks PRIMARY dla inne, sport, nauka oraz index_id_nazwa dla sport
+
+    SELECT imie 
+    FROM osoba INNER JOIN zwierzak ON osoba.id=zwierzak.ownerId
+    WHERE zwierzak.species='dog'
+    ORDER BY osoba.dataUrodzenia ASC LIMIT 1;
+    wykorzystany indeks PRIMARY dla osoba
+
+3.  CREATE TABLE zawody(
+	id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nazwa varchar(30) NOT NULL,
+	pensja_min int NOT NULL,
+	pensja_max int NOT NULL);
+
+    CREATE TABLE praca(
+	id_zawod int NOT NULL,
+	id_osoba int NOT NULL,
+	pensja int NOT NULL,
+    PRIMARY KEY(id_osoba, id_zawod));
+
+    CREATE PROCEDURE uzupelnianie2()
+    BEGIN
+    DECLARE i INT;
+    DECLARE nazw varchar(30);
+    DECLARE pMin INT;
+    DECLARE pMax INT;
+    SET i = 0;
+    WHILE i<10 DO
+    CASE
+        WHEN i = 0 THEN
+            SET nazw = 'fryzjer';
+            SET pMin = 2400;
+            SET pMax = 4300;
+        WHEN i = 1 THEN
+            SET nazw = 'weterynarz';
+            SET pMin = 4400;
+            SET pMax = 5400;
+        WHEN i = 2 THEN
+            SET nazw = 'nauczyciel matematyki';
+            SET pMin = 2700;
+            SET pMax = 4200;
+        WHEN i = 3 THEN
+            SET nazw = 'hydraulik';
+            SET pMin = 4200;
+            SET pMax = 5100;
+        WHEN i = 4 THEN
+            SET nazw = 'kierowca MPK';
+            SET pMin = 4000;
+            SET pMax = 5000;
+        WHEN i = 5 THEN
+            SET nazw = 'radca prawny';
+            SET pMin = 9200;
+            SET pMax = 12000;
+        WHEN i = 6 THEN
+            SET nazw = 'programista Java';
+            SET pMin = 10000;
+            SET pMax = 12500;
+        WHEN i = 7 THEN
+            SET nazw = 'programista C++';
+            SET pMin = 9400;
+            SET pMax = 11300;
+        WHEN i = 8 THEN
+            SET nazw = 'chemik-laborant';
+            SET pMin = 3200;
+            SET pMax = 4300;
+        WHEN i = 9 THEN
+            SET nazw = 'inzynier elektryk';
+            SET pMin = 6600;
+            SET pMax = 8100;
+    END CASE;
+    SET i = i+1;
+    INSERT INTO zawody(nazwa, pensja_min, pensja_max) VALUES(
+        nazw, pMin, pMax);
+    END WHILE;
+    END;
+
+    CREATE PROCEDURE uzupelnianie3()
+    BEGIN
+    DECLARE idk INT DEFAULT 0;
+    DECLARE j INT;
+    DECLARE finished INT DEFAULT 0;
+    DECLARE kursor CURSOR FOR SELECT id FROM osoba;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+    OPEN kursor;
+    getId: LOOP
+        FETCH kursor INTO idk;
+        IF finished THEN
+            LEAVE getId;
+        END IF;
+        SET j=FLOOR(RAND()*10+1);
+        SET @pmin = (SELECT pensja_min FROM zawody WHERE id=j);
+        SET @pmax = (SELECT pensja_max FROM zawody WHERE id=j);
+        INSERT INTO praca(id_osoba, id_zawod, pensja) VALUES (idk, j, FLOOR(RAND()*(@pmax - @pmin +1)+@pmin));
+    END LOOP;
+    CLOSE kursor;
+    END;
+
+4.  CREATE PROCEDURE zad4(IN agg varchar(20), IN kol varchar(20))
+    BEGIN
+        IF agg = 'COUNT' AND (kol = 'imie' OR kol = 'plec') THEN
+            SET @liczba = (SELECT COUNT(kol) AS lp FROM osoba);
+            SELECT kol AS kolumna, agg AS funkcja, @liczba AS wynik;
+        ELSEIF agg = 'GROUP_CONCAT' AND kol <> 'id' THEN
+            SET @wynik = (SELECT GROUP_CONCAT(kol) FROM osoba);
+            SELECT kol AS kolumna, agg AS funkcja, @wynik AS wynik;
+        ELSEIF kol = 'dataUrodzenia' THEN
+            IF agg = 'MAX' THEN
+                SET @wynik = (SELECT MAX(dataUrodzenia) FROM osoba);
+                SELECT kol AS kolumna, agg AS funkcja, @wynik AS wynik;
+            ELSEIF agg = 'MIN' THEN
+                SET @wynik = (SELECT MIN(dataUrodzenia) FROM osoba);
+                SELECT kol AS kolumna, agg AS funkcja, @wynik AS wynik;
+            ELSEIF agg = 'AVG' THEN
+                SET @wynik = (SELECT AVG(YEAR(NOW())-YEAR(dataUrodzenia)) FROM osoba);
+                SELECT kol AS kolumna, agg AS funkcja, @wynik AS wynik;
+            ELSEIF agg = 'VAR_POP' THEN
+                SET @wynik = (SELECT VAR_POP(YEAR(NOW())-YEAR(dataUrodzenia)) FROM osoba);
+                SELECT kol AS kolumna, agg AS funkcja, @wynik AS wynik;
+            ELSEIF agg = 'STD' THEN
+                SET @wynik = (SELECT STD(YEAR(NOW())-YEAR(dataUrodzenia)) FROM osoba);
+                SELECT kol AS kolumna, agg AS funkcja, @wynik AS wynik;
+            ELSE 
+                SELECT "Halo, tak nie wolno" AS blad;
+            END IF;
+        ELSE
+            SELECT "Halo, tak nie wolno" AS blad;
+        END IF;
+    END;
+
+5.  CREATE TABLE hasla(
+	osoba int NOT NULL PRIMARY KEY,
+	haslo varchar(40) NOT NULL);
+    
+    CREATE PROCEDURE zad5_1()
+    BEGIN
+    DECLARE i INT;
+    SET i = 1;
+    WHILE i<1008 DO
+        INSERT INTO hasla(osoba, haslo) VALUES(
+            i, sha1((SELECT imie FROM osoba WHERE id = i))
+        );
+        SET i = i+1;
+    END WHILE;
+    END;
+    
+    CREATE PROCEDURE zad5(IN imie varchar(20), IN haslo varchar(20))
+    BEGIN
+        IF sha1(haslo) = sha1(
+            (SELECT hasla.haslo
+            FROM hasla INNER JOIN osoba ON osoba.id=hasla.osoba
+            WHERE osoba.imie = imie
+            ORDER BY osoba.id LIMIT 1)) THEN
+                SELECT dataUrodzenia FROM osoba WHERE osoba.imie = imie ORDER BY osoba.id LIMIT 1;
+        ELSE
+                SELECT DATE(DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*(36500 - 6570 +1)+6750) DAY)) AS dataUrodzenia;
+        END IF;
+    END;
+
+7.  CREATE PROCEDURE zad7(IN a INT, IN b INT)
+    BEGIN
+        IF a<b OR a<0 OR b<0 THEN
+            SELECT 'bledne parametry' AS blad;
+        ELSEIF a=b OR b=0 THEN
+            SELECT a AS n, b AS k, 1 AS n_po_k;
+        ELSE
+            WITH RECURSIVE newton(n, k, n_po_k) AS
+            (
+                SELECT a-b, 0, 1
+                UNION ALL
+                SELECT n+1, k+1, n_po_k*(n+1)/(k+1) FROM newton WHERE n<a AND k<b
+            )
+            SELECT * FROM newton WHERE n=a AND k=b;
+        END IF;
+    END;
+
+8.  CREATE PROCEDURE zad8(IN nazwaZ varchar(30))
+    BEGIN
+    SET autocommit = 0;
+    START TRANSACTION;
+    SAVEPOINT initial;
+    UPDATE praca
+    SET pensja = 1.1*pensja
+    WHERE id_zawod = (SELECT id FROM zawody WHERE nazwa=nazwaZ);
+    SET @licznik = (
+        SELECT COUNT(praca.pensja)
+        FROM zawody INNER JOIN praca ON zawody.id = praca.id_zawod
+        WHERE praca.pensja>zawody.pensja_max);
+    IF @licznik > 0 THEN
+        ROLLBACK TO initial;
+    ELSE
+        COMMIT;
+    END IF;
+    END;
+
+9.  CREATE PROCEDURE srZarobki(IN nazwaZ varchar(30))
+    BEGIN
+    SET @czulosc = (SELECT pensja_max-pensja_min FROM zawody WHERE nazwa=nazwaZ);
+    SET @randomW = RAND() - 0.5;
+    SET @diff = 0.0 - (@czulosc/0.03 * SIGN(@randomW) * LOG(1-2*ABS(@randomW)));
+    SET @smiesznyWynik = (SELECT AVG(praca.pensja) + @diff
+    FROM praca INNER JOIN zawody ON praca.id_zawod = zawody.id
+    WHERE zawody.nazwa = nazwaZ);
+    IF @smiesznyWynik > (SELECT pensja_max FROM zawody WHERE nazwa=nazwaZ)
+    OR @smiesznyWynik < (SELECT pensja_min FROM zawody WHERE nazwa=nazwaZ) THEN
+        SELECT 'wystapil blad' AS blad;
+    ELSE
+        SELECT @smiesznyWynik AS srednia_pensja;
+    END IF;
+    END;
+
+
+
+

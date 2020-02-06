@@ -1,0 +1,41 @@
+1. SHOW TABLES;
+2. SELECT owner, name FROM pet;
+3. SELECT birth FROM pet WHERE species='dog';
+4. SELECT name, owner FROM pet WHERE species='dog' AND month(birth)<=6;
+5. SELECT DISTINCT species FROM pet WHERE sex='m';
+6. SELECT name, date FROM event WHERE remark LIKE 'Gave%';
+7. SELECT owner FROM pet WHERE name LIKE '%ffy';
+8. SELECT owner, name FROM pet WHERE death IS NULL;
+9. SELECT owner FROM pet GROUP BY owner HAVING COUNT(name)>1;
+10. SELECT pet.owner, pet.name FROM pet WHERE pet.name NOT IN (SELECT event.name FROM event INNER JOIN pet ON event.name=pet.name WHERE type='birthday') AND pet.species='dog' ORDER BY pet.name DESC;
+11. SELECT name FROM pet WHERE birth BETWEEN '1992-01-01' AND '1994-06-01';
+12. SELECT name FROM pet WHERE death IS NULL ORDER BY birth ASC LIMIT 2;
+13. SELECT name FROM pet WHERE birth=(SELECT MAX(birth) FROM pet WHERE death IS NULL);
+14. SELECT pet.owner FROM pet INNER JOIN event ON pet.name=event.name WHERE event.date > (SELECT date FROM event WHERE name='Slim') GROUP BY owner;
+15. SELECT owner FROM pet WHERE owner NOT IN (SELECT pet.owner FROM pet INNER JOIN event ON pet.name=event.name WHERE event.type='birthday') GROUP BY owner;
+16. SELECT T1.owner, T2.owner FROM pet T1 CROSS JOIN pet T2 WHERE T1.species=T2.species AND T1.owner>T2.owner;
+17. ALTER TABLE event ADD COLUMN performer varchar(20) AFTER date;
+18. UPDATE event INNER JOIN pet ON pet.name=event.name SET performer = IF (event.type='litter', "Knuth", IF(event.type='vet', "Stirling", pet.owner));
+19. UPDATE pet SET owner='Diane' WHERE species='cat';
+20. SELECT species, COUNT(name) AS quantity FROM pet GROUP BY species ORDER BY quantity DESC;
+21. DELETE FROM pet WHERE death IS NOT NULL;
+22. ALTER TABLE pet DROP COLUMN death;
+23. INSERT INTO pet(name,owner,species,sex,birth) VALUES 
+('Mr. Peanutbutter','Carl','dog','m','1973-05-09'), 
+('Pickles','James','dog','f','1995-02-13'), 
+('Albino','Carolyn','hamster','m','2013-11-08'), 
+('Bojack','Carl','goat','m','2005-05-05'), 
+('Todd','Carolyn','goat','m','1999-09-04'), 
+('Ruthie','Carolyn','goat','f','2019-10-25'),
+('Beatrice','James','sheep','f','1954-12-09');
+
+INSERT INTO event(name,date,type,remark,performer) VALUES
+('Mr. Peanutbutter','2014-11-09','vet','broke leg while chasing mailman','Knuth'),
+('Pickles','2016-07-23','litter','4 puppers, 2 female, 2 male','Stirling'),
+('Albino','2014-11-08','birthday','first birthday','Carolyn'),
+('Bojack','2015-04-12','vet','injured in a car accident','Stirling'),
+('Todd','2014-09-04','birthday','gave him a robot','Carolyn'),
+('Ruthie','2019-11-02','vet','regular check-up','Knuth'),
+('Beatrice','1994-03-21','vet','twisted ankle','Knuth');
+
+
